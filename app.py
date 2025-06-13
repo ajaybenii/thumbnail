@@ -20,14 +20,14 @@ st.markdown("Upload a CSV file with city, sublocation, and polygon data to gener
 
 # Initialize GCS client using environment variable
 try:
-    credentials_content = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    credentials_content = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_CONTENT")
     if not credentials_content:
-        raise ValueError("GCP credentials not found in environment variable GOOGLE_APPLICATION_CREDENTIALS")
+        raise ValueError("GCP credentials not found in environment variable GOOGLE_APPLICATION_CREDENTIALS_CONTENT")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_credentials:
         temp_credentials.write(credentials_content.encode('utf-8'))
         temp_credentials.flush()
         client = storage.Client.from_service_account_json(temp_credentials.name)
-    # os.remove(temp_credentials_file.name)
+    os.remove(temp_credentials.name)
     bucket_name = "static-site-data"
     bucket = client.get_bucket(bucket_name)
     st.success("Connected to Google Cloud Storage.")
@@ -36,7 +36,7 @@ except Exception as e:
     st.stop()
 
 # Display Chromium status
-chromium_path = os.environ.get("PYPPETEER_EXECUTABLE_PATH", "/usr/bin/chromium-browser")
+chromium_path = os.getenv("PYPPETEER_EXECUTABLE_PATH", "/usr/bin/chromium-browser")
 if os.path.exists(chromium_path):
     st.success(f"Chromium found at: {chromium_path}")
 else:
@@ -49,7 +49,7 @@ else:
             chromium_path = path
             break
     if not os.path.exists(chromium_path):
-        st.warning("Cannot generate maps without Chromium.")
+        st.warning("Cannot generate maps without Chromium. Ensure Chromium is installed.")
         st.stop()
 
 # Async function to process coordinates and generate maps
