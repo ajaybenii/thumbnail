@@ -20,14 +20,14 @@ st.markdown("Upload a CSV file with city, sublocation, and polygon data to gener
 
 # Initialize GCS client using environment variable
 try:
-    credentials_content = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_CONTENT")
+    credentials_content = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
     if not credentials_content:
-        raise ValueError("GCP credentials not found in environment variable GOOGLE_APPLICATION_CREDENTIALS_CONTENT")
+        raise ValueError("GCP credentials not found in environment variable GOOGLE_APPLICATION_CREDENTIALS")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_credentials:
         temp_credentials.write(credentials_content.encode('utf-8'))
         temp_credentials.flush()
         client = storage.Client.from_service_account_json(temp_credentials.name)
-    os.remove(temp_credentials.name)
+    os.remove(temp_credentials_file.name)
     bucket_name = "static-site-data"
     bucket = client.get_bucket(bucket_name)
     st.success("Connected to Google Cloud Storage.")
@@ -36,11 +36,21 @@ except Exception as e:
     st.stop()
 
 # Display Chromium status
-chromium_path = os.getenv("PYPPETEER_EXECUTABLE_PATH", "/usr/bin/chromium")
+chromium_path = os.environ.get("PYPPETEER_EXECUTABLE_PATH", "/usr/bin/chromium-browser")
 if os.path.exists(chromium_path):
     st.success(f"Chromium found at: {chromium_path}")
 else:
     st.error(f"Chromium not found at: {chromium_path}. Ensure Chromium is installed.")
+    # Debug alternative paths
+    possible_paths = ["/usr/bin/chromium", "/usr/lib/chromium-browser/chromium-browser", "/usr/bin/chromium-browser"]
+    for path in possible_paths:
+        if os.path.exists(path):
+            st.info(f"Found Chromium at alternative path: {path}")
+            chromium_path = path
+            break
+    if not os.path.exists(chromium_path):
+        st.warning("Cannot generate maps without Chromium.")
+        st.stop()
 
 # Async function to process coordinates and generate maps
 async def process_coordinates(poly, sublocation, city, csv_writer):
@@ -118,7 +128,7 @@ async def process_coordinates(poly, sublocation, city, csv_writer):
 
             # Generate screenshot path
             localmap_path = f'{sublocation} {city}.png'
-            local_map_path = localmap_path.replace(" ", "-").lower()
+            local_map_path = local_map_path.replace(" ", "-").lower()
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_png:
                 screenshot_path = temp_png.name
                 await page.screenshot({'path': screenshot_path, 'fullPage': True, 'quality': 100})

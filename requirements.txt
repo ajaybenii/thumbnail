@@ -1,7 +1,7 @@
-streamlit
-folium
-pyppeteer
-pandas
-google-cloud-storage
-pillow
-polyline
+streamlit==1.35.0
+folium==0.17.0
+pyppeteer==2.0.0
+pandas==2.2.3
+google-cloud-storage==2.18.2
+pillow==10.4.0
+polyline==2.0.2
