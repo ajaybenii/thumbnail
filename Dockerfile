@@ -38,22 +38,25 @@ RUN echo "deb http://deb.debian.org/debian bookworm main contrib non-free" > /et
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
-WORKDIR /app
+WORKDIR /home/app
 
-# Copy application files
-COPY requirements.txt .
-COPY app.py .
-COPY Procfile .
+# Copy requirements first for caching
+COPY requirements.txt /home/app
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy application files
+COPY app.py /home/app
 
 # Set environment variables
 ENV PYPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PYTHONUNBUFFERED=1
+ENV PORT="${PORT:-10000}"
 
-# Expose port
-EXPOSE $PORT
+# Expose port (Render uses $PORT, default 10000)
+EXPOSE 10000
 
 # Start Streamlit
-CMD ["streamlit", "run", "app.py", "--server.port", "$PORT", "--server.address", "0.0.0.0"]
+CMD /bin/sh -c "streamlit run app.py --server.port $PORT --server.address 0.0.0.0"
