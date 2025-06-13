@@ -36,13 +36,13 @@ except Exception as e:
     st.stop()
 
 # Display Chromium status
-chromium_path = os.getenv("PYPPETEER_EXECUTABLE_PATH", "/usr/bin/chromium-browser")
+chromium_path = os.getenv("PYPPETEER_EXECUTABLE_PATH", "/usr/bin/chromium")
 if os.path.exists(chromium_path):
     st.success(f"Chromium found at: {chromium_path}")
 else:
     st.error(f"Chromium not found at: {chromium_path}. Ensure Chromium is installed.")
     # Debug alternative paths
-    possible_paths = ["/usr/bin/chromium", "/usr/lib/chromium-browser/chromium-browser", "/usr/bin/chromium-browser"]
+    possible_paths = ["/usr/bin/chromium-browser", "/usr/lib/chromium/chromium", "/usr/bin/chromium"]
     for path in possible_paths:
         if os.path.exists(path):
             st.info(f"Found Chromium at alternative path: {path}")
@@ -174,10 +174,9 @@ async def main(df, output_csv_path):
         total_rows = len(df)
 
         for index, row in df.iterrows():
-            # Adjust column names if your CSV uses different ones (e.g., HM_Polygon, Sublocationname)
-            poly = row['Polygon']  # Change to 'HM_Polygon' if needed
-            sublocation = row['SubLocationName']  # Change to 'Sublocationname' if needed
-            city = row['CityName']  # Change to 'Cityname' if needed
+            poly = row['Polygon']
+            sublocation = row['SubLocationName']
+            city = row['CityName']
             status_text.text(f"Processing {n}/{total_rows}: {sublocation}, {city}")
             result = await process_coordinates(poly, sublocation, city, csv_writer)
             progress_bar.progress(n / total_rows)
@@ -190,7 +189,6 @@ async def main(df, output_csv_path):
 uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
 
 if uploaded_file:
-    # Read the uploaded CSV
     try:
         df = pd.read_csv(uploaded_file)
         expected_columns = ['CityName', 'SubLocationName', 'Polygon']
@@ -200,16 +198,12 @@ if uploaded_file:
             st.write("CSV uploaded successfully. Preview:")
             st.dataframe(df.head())
 
-            # Only show Generate Maps button if Chromium is found
             if os.path.exists(chromium_path):
-                # Button to start processing
                 if st.button("Generate Maps"):
                     with st.spinner("Processing maps..."):
-                        # Create a temporary file for the output CSV
                         with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_csv:
                             output_csv_path = temp_csv.name
 
-                        # Run the async main function
                         try:
                             loop = asyncio.new_event_loop()
                             asyncio.set_event_loop(loop)
@@ -222,15 +216,15 @@ if uploaded_file:
                             except:
                                 pass
 
-                        # Provide download link for the output CSV
-                        with open(output_csv_path, "rb") as f:
-                            st.download_button(
-                                label="Download Output CSV",
-                                data=f,
-                                file_name="map_thumbnails_output.csv",
-                                mime="text/csv"
-                            )
-                        os.remove(output_csv_path)
+                        if output_csv_path:
+                            with open(output_csv_path, "rb") as f:
+                                st.download_button(
+                                    label="Download Output CSV",
+                                    data=f,
+                                    file_name="map_thumbnails_output.csv",
+                                    mime="text/csv"
+                                )
+                            os.remove(output_csv_path)
             else:
                 st.warning("Cannot generate maps without Chromium. Ensure Chromium is installed.")
 
