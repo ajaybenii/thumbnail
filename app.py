@@ -27,7 +27,7 @@ try:
         temp_credentials.write(credentials_content.encode('utf-8'))
         temp_credentials.flush()
         client = storage.Client.from_service_account_json(temp_credentials.name)
-    os.remove(temp_credentials_file.name)
+    # os.remove(temp_credentials_file.name)
     bucket_name = "static-site-data"
     bucket = client.get_bucket(bucket_name)
     st.success("Connected to Google Cloud Storage.")
